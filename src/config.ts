@@ -84,8 +84,8 @@ export const FIELD_COORDS: Record<string, FieldCoord> = {
   NAME:             { topRight: { x: 168, y: 32 }, bottomLeft: { x: 120, y: 34 } },
   INSTITUTION_NAME: { topRight: { x: 158, y: 37 }, bottomLeft: { x: 120, y: 39 } },
   ID_NUMBER:        { topRight: { x: 167, y: 42 }, bottomLeft: { x: 120, y: 44 } },
-  PHONE:            { topRight: { x: 166, y: 47 }, bottomLeft: { x: 120, y: 48 } },
-  BARCODE_TEXT:     { topRight: { x: 107, y: 70 }, bottomLeft: { x: 71, y: 73 } },
+  PHONE:            { topRight: { x: 165, y: 45 }, bottomLeft: { x: 121, y: 49 } },
+  BARCODE_TEXT:     { topRight: { x: 106, y: 20 }, bottomLeft: { x: 87, y: 23 } },
   BARCODE_IMAGE:    { topRight: { x: 197, y: 19 }, bottomLeft: { x: 182, y: 53 } },
 } as const;
 
