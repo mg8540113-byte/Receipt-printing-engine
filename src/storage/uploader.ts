@@ -5,19 +5,18 @@ import { logger } from '../logger';
 // ============================================
 // Supabase Storage Upload — Idempotent
 // ============================================
-// Uploads PDF to: print-files/jobs/{institutionName}_{templateType}_{batchNumber}.pdf
+// Uploads PDF to: print-files/jobs/{institutionCode}_{templateType}_{batchNumber}.pdf
 // Uses upsert=true so retries overwrite the previous file.
 
 export async function uploadPdf(
   jobId: string,
   pdfBytes: Uint8Array,
-  institutionName: string,
+  institutionCode: string,
   templateType: number,
   batchNumber: number
 ): Promise<string> {
   const supabase = getSupabaseClient();
-  const safeName = institutionName.replace(/[\/\\:*?"<>|]/g, '_');
-  const fileName = `${safeName}_${templateType}_${batchNumber}.pdf`;
+  const fileName = `${institutionCode}_${templateType}_${batchNumber}.pdf`;
   const filePath = `${STORAGE.PATH_PREFIX}/${fileName}`;
 
   const { error } = await supabase.storage

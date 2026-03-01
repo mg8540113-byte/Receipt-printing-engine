@@ -50,9 +50,9 @@ export async function processJob(job: PrintJob): Promise<void> {
     logger.info('PDF_VALIDATED', { job_id: job.id });
 
     // Step 4: Upload to Supabase Storage
-    const institutionName = vouchers[0].institution_name;
+    const institutionCode = vouchers[0].institution_code;
     const batchNumber = Math.floor(job.offset_start / 1000) + 1;
-    const filePath = await uploadPdf(job.id, pdfBytes, institutionName, job.template_type, batchNumber);
+    const filePath = await uploadPdf(job.id, pdfBytes, institutionCode, job.template_type, batchNumber);
 
     logger.info('PDF_UPLOADED', {
       job_id: job.id,
