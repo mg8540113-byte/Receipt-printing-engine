@@ -16,7 +16,8 @@ export async function uploadPdf(
   batchNumber: number
 ): Promise<string> {
   const supabase = getSupabaseClient();
-  const fileName = `${institutionCode}_${templateType}_${batchNumber}.pdf`;
+  const shortId = jobId.substring(0, 6);
+  const fileName = `${institutionCode}_${templateType}_${batchNumber}_${shortId}.pdf`;
   const filePath = `${STORAGE.PATH_PREFIX}/${fileName}`;
 
   const { error } = await supabase.storage
