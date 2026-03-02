@@ -32,7 +32,8 @@ receipt-worker/
 │       └── detached_200.pdf           ← תבנית רקע 200 ש"ח
 │
 ├── sql/
-│   └── fetch_vouchers_for_print.sql   ← RPC שצריך לרשום ב-Supabase
+│   ├── fetch_vouchers_for_print.sql              ← RPC לשליפת תלושים רגילים (לפי group)
+│   └── fetch_vouchers_for_external_order.sql     ← RPC לשליפת תלושים מהזמנות חיצוניות
 │
 ├── src/
 │   ├── index.ts                       ← נקודת כניסה
@@ -83,7 +84,9 @@ receipt-worker/
         │
 4. Worker תופס משימה (RPC: claim_print_job — atomic, FOR UPDATE SKIP LOCKED)
         │
-5. Worker שולף נתוני תלושים (RPC: fetch_vouchers_for_print)
+5. Worker שולף נתוני תלושים:
+   ├── job רגיל (group_id קיים)    → RPC: fetch_vouchers_for_print
+   └── job חיצוני (external_order_id קיים) → RPC: fetch_vouchers_for_external_order
         │
 6. Worker מייצר PDF:
    ├── טוען תבנית רקע (page embedding — XObject משותף)
@@ -112,13 +115,28 @@ receipt-worker/
 
 ---
 
-## RPCs ב-Supabase (3 פונקציות)
+## RPCs ב-Supabase (4 פונקציות)
 
 | פונקציה | מי קורא | מטרה |
 |---|---|---|
 | `claim_print_job(p_worker_id)` | Worker | תפיסה אטומית של משימה pending |
 | `reset_stuck_jobs()` | Worker (watchdog) | איפוס משימות תקועות > 10 דקות |
-| `fetch_vouchers_for_print(p_group_id, p_template_type, p_offset_start, p_limit_count)` | Worker | שליפת נתוני תלושים |
+| `fetch_vouchers_for_print(p_group_id, p_template_type, p_offset_start, p_limit_count)` | Worker | שליפת תלושים לפי קבוצה (jobs רגילים) |
+| `fetch_vouchers_for_external_order(p_external_order_id, p_template_type, p_offset_start, p_limit_count)` | Worker | שליפת תלושים לפי הזמנה חיצונית — מחזיר אותו VoucherRow מבנה עם ערכי ברירת מחדל |
+
+### הערת מבנה — external_order jobs
+
+job מסוג הזמנה חיצונית מגיע עם `external_order_id` מלא ו-`group_id = null`.
+ה-RPC ממלא את שדות VoucherRow כך שכל שאר הקוד (PDF, RTL, ברקוד) לא נוגע:
+
+| שדה VoucherRow | ערך |
+|---|---|
+| `title_before` / `last_name` / `title_after` | NULL |
+| `first_name` | `eo.full_name` (השם המלא) |
+| `id_number` / `phone` | מ-`external_orders` |
+| `avrech_code` | 0 |
+| `institution_name` | `'הזמנות חיצוניות'` |
+| `institution_code` | `'external'` (משמש לנתיב Storage) |
 
 ---
 
@@ -195,8 +213,16 @@ receipt-worker/
 
 ### בעיה: PDF ריק / שגוי
 1. בדוק logs: `VOUCHERS_FETCHED` — count צריך להיות > 0
-2. בדוק ש-RPC `fetch_vouchers_for_print` קיים ב-Supabase
+2. בדוק ש-RPC המתאים קיים ב-Supabase:
+   - job רגיל → `fetch_vouchers_for_print`
+   - job חיצוני → `fetch_vouchers_for_external_order`
 3. בדוק ש-`template_type` תואם (50/100/200)
+
+### בעיה: job חיצוני לא מעובד
+1. בדוק ש-`print_jobs.external_order_id` מלא ו-`group_id = null`
+2. בדוק ש-RPC `fetch_vouchers_for_external_order` הורץ ב-Supabase
+3. בדוק ש-`vouchers.external_order_id` מאוכלס — RPC מסנן לפי שדה זה
+4. קובץ SQL: `sql/fetch_vouchers_for_external_order.sql`
 
 ### בעיה: טקסט לא במקום הנכון
 1. כל הקואורדינטות ב-`src/config.ts` → `FIELD_COORDS`
@@ -279,4 +305,4 @@ export const VOUCHER_EXPIRY = '31/07/2026';
 - כל log הוא JSON מובנה (structured)
 - תמיד כולל: `event`, `worker_id`, `timestamp`
 - **אסור** לרשום: שמות, ת.ז., טלפונים, Service Role Key
-- מותר לרשום: job_id, group_id, template_type, מספר עמודים, גודל קובץ, משך זמן
+- מותר לרשום: job_id, group_id, external_order_id, template_type, מספר עמודים, גודל קובץ, משך זמן
