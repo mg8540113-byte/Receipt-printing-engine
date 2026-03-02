@@ -6,22 +6,23 @@ import { logger } from '../logger';
 // ============================================
 
 export interface PrintJob {
-  id: string;
-  batch_group_id: string;
-  group_id: string;
-  template_type: number;
-  offset_start: number;
-  limit_count: number;
-  status: string;
-  retry_count: number;
-  max_retries: number;
-  worker_id: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  file_path: string | null;
-  pages_generated: number | null;
-  error_message: string | null;
-  created_at: string;
+  id:                 string;
+  batch_group_id:     string;
+  group_id:           string | null;
+  external_order_id:  string | null;
+  template_type:      50 | 100 | 200;
+  offset_start:       number;
+  limit_count:        number;
+  status:             'pending' | 'in_progress' | 'completed' | 'failed';
+  retry_count:        number;
+  max_retries:        number;
+  worker_id:          string | null;
+  started_at:         string | null;
+  completed_at:       string | null;
+  file_path:          string | null;
+  pages_generated:    number | null;
+  error_message:      string | null;
+  created_at:         string;
 }
 
 export interface VoucherRow {
@@ -36,6 +37,70 @@ export interface VoucherRow {
   avrech_code: number;
   institution_name: string;
   institution_code: string;
+}
+
+// ============================================
+// Fetch voucher data for a job (group-based)
+// ============================================
+
+export async function fetchVouchers(
+  groupId: string,
+  templateType: 50 | 100 | 200,
+  offsetStart: number,
+  limitCount: number
+): Promise<VoucherRow[]> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase.rpc('fetch_vouchers_for_print', {
+    p_group_id:     groupId,
+    p_template_type: templateType,
+    p_offset_start:  offsetStart,
+    p_limit_count:   limitCount,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch vouchers: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error(
+      `No vouchers returned for group=${groupId} type=${templateType} offset=${offsetStart} limit=${limitCount}`
+    );
+  }
+
+  return data as VoucherRow[];
+}
+
+// ============================================
+// Fetch voucher data for a job (external-order-based)
+// ============================================
+
+export async function fetchVouchersByExternalOrder(
+  externalOrderId: string,
+  templateType:    50 | 100 | 200,
+  offsetStart:     number,
+  limitCount:      number
+): Promise<VoucherRow[]> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase.rpc('fetch_vouchers_for_external_order', {
+    p_external_order_id: externalOrderId,
+    p_template_type:     templateType,
+    p_offset_start:      offsetStart,
+    p_limit_count:       limitCount,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch vouchers: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error(
+      `No vouchers returned for external_order=${externalOrderId} type=${templateType} offset=${offsetStart} limit=${limitCount}`
+    );
+  }
+
+  return data as VoucherRow[];
 }
 
 // ============================================
@@ -59,38 +124,6 @@ export async function claimJob(workerId: string): Promise<PrintJob | null> {
 
   const job: PrintJob = Array.isArray(data) ? data[0] : data;
   return job;
-}
-
-// ============================================
-// Fetch voucher data for a job
-// ============================================
-
-export async function fetchVouchers(
-  groupId: string,
-  templateType: number,
-  offsetStart: number,
-  limitCount: number
-): Promise<VoucherRow[]> {
-  const supabase = getSupabaseClient();
-
-  const { data, error } = await supabase.rpc('fetch_vouchers_for_print', {
-    p_group_id: groupId,
-    p_template_type: templateType,
-    p_offset_start: offsetStart,
-    p_limit_count: limitCount,
-  });
-
-  if (error) {
-    throw new Error(`Failed to fetch vouchers: ${error.message}`);
-  }
-
-  if (!data || data.length === 0) {
-    throw new Error(
-      `No vouchers returned for group=${groupId} type=${templateType} offset=${offsetStart} limit=${limitCount}`
-    );
-  }
-
-  return data as VoucherRow[];
 }
 
 // ============================================

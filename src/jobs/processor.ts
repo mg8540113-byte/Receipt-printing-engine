@@ -1,4 +1,4 @@
-import { PrintJob, fetchVouchers, markJobCompleted, markJobFailed } from '../db/queries';
+import { PrintJob, fetchVouchers, fetchVouchersByExternalOrder, markJobCompleted, markJobFailed } from '../db/queries';
 import { generatePdf } from '../pdf/generator';
 import { validatePdf } from '../validation/validator';
 import { uploadPdf } from '../storage/uploader';
@@ -13,23 +13,31 @@ import { logger } from '../logger';
 export async function processJob(job: PrintJob): Promise<void> {
   const startTime = Date.now();
   const jobMeta = {
-    job_id: job.id,
-    group_id: job.group_id,
-    template_type: job.template_type,
-    offset_start: job.offset_start,
-    limit_count: job.limit_count,
+    job_id:           job.id,
+    group_id:         job.group_id,
+    external_order_id: job.external_order_id,
+    template_type:    job.template_type,
+    offset_start:     job.offset_start,
+    limit_count:      job.limit_count,
   };
 
   logger.info('JOB_PROCESSING_START', jobMeta);
 
   try {
     // Step 1: Fetch voucher data from DB
-    const vouchers = await fetchVouchers(
-      job.group_id,
-      job.template_type,
-      job.offset_start,
-      job.limit_count
-    );
+    const vouchers = job.external_order_id
+      ? await fetchVouchersByExternalOrder(
+          job.external_order_id,
+          job.template_type,
+          job.offset_start,
+          job.limit_count
+        )
+      : await fetchVouchers(
+          job.group_id!,
+          job.template_type,
+          job.offset_start,
+          job.limit_count
+        );
 
     logger.info('VOUCHERS_FETCHED', {
       job_id: job.id,
