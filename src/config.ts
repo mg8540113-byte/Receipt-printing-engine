@@ -80,7 +80,7 @@ export interface FieldCoord {
 export const FIELD_COORDS: Record<string, FieldCoord> = {
   INSTITUTION_CODE: { topRight: { x: 31, y: 21 },  bottomLeft: { x: 24, y: 23 } },
   ORDER_CODE:       { topRight: { x: 178, y: 21 }, bottomLeft: { x: 171, y: 23 } },
-  EXPIRY:           { topRight: { x: 134, y: 22 }, bottomLeft: { x: 119, y: 24 } },
+  EXPIRY:           { topRight: { x: 134, y: 21 }, bottomLeft: { x: 119, y: 23 } },
   NAME:             { topRight: { x: 168, y: 32 }, bottomLeft: { x: 120, y: 34 } },
   INSTITUTION_NAME: { topRight: { x: 158, y: 37 }, bottomLeft: { x: 120, y: 39 } },
   ID_NUMBER:        { topRight: { x: 167, y: 42 }, bottomLeft: { x: 120, y: 44 } },
